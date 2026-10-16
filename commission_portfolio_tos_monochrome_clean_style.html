@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commission Info & Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Quicksand for soft rounded typography matching reference -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #0d0d0e;
+            color: #1f1f23;
+            min-height: 100vh;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e4e4e7;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 8px;
+        }
+
+        /* Tab Animation */
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+            animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .editable-active [contenteditable="true"] {
+            outline: 2px dashed #18181b;
+            outline-offset: 3px;
+            background-color: rgba(24, 24, 27, 0.04);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-6 flex flex-col justify-center items-center min-h-screen relative selection:bg-neutral-800 selection:text-white">
+
+    <!-- Global File Upload Element -->
+    <input type="file" id="global-image-uploader" accept="image/*" class="hidden" onchange="handleFileSelected(event)">
+
+    <!-- Fullscreen Image Lightbox Modal with Zoom capabilities -->
+    <div id="image-lightbox" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+        <div class="absolute top-5 right-5 flex gap-3">
+            <button onclick="resetZoom()" class="px-3 py-1.5 bg-neutral-800 text-white rounded-xl text-xs font-semibold hover:bg-neutral-700 transition" title="Reset kích thước">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Zoom
+            </button>
+            <button onclick="closeLightbox()" class="w-10 h-10 bg-neutral-800 text-white rounded-xl flex items-center justify-center text-base hover:bg-red-600 transition" title="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-auto max-w-full max-h-[85vh] flex items-center justify-center p-2 rounded-2xl border border-neutral-700 bg-neutral-900/50">
+            <img id="lightbox-img" src="" alt="Full View" class="max-h-[80vh] object-contain transition-transform duration-200 cursor-zoom-in" style="transform: scale(1);" onclick="toggleZoom(this)">
+        </div>
+        <p class="text-neutral-400 text-xs mt-3 font-mono">💡 Nhấp vào ảnh để phóng to/thu nhỏ • Cuộn chuột để xem chi tiết</p>
+    </div>
+
+    <!-- Main Browser Container -->
+    <div class="w-full max-w-4xl bg-neutral-900 rounded-[32px] p-3 sm:p-5 border-2 border-neutral-700 shadow-2xl relative my-auto">
+
+        <!-- Ribbon Tag Header -->
+        <div class="absolute -top-3.5 left-8 sm:left-12 bg-neutral-100 text-neutral-900 px-3.5 py-0.5 rounded-lg border border-neutral-800 text-[11px] font-bold tracking-wider uppercase shadow">
+            ✦ info & portfolio window
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <div class="pt-4 px-2 sm:px-4 flex items-center justify-between overflow-x-auto no-scrollbar gap-1.5" id="tab-bar-container">
+            <div class="flex items-center gap-2" id="tab-list">
+                <button onclick="switchTab('home')" id="tab-btn-home" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-neutral-700 bg-neutral-100 text-neutral-900 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-house text-[11px]"></i>
+                    <span>home</span>
+                </button>
+                <button onclick="switchTab('tos')" id="tab-btn-tos" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-transparent text-neutral-400 hover:text-neutral-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-file-contract text-[11px]"></i>
+                    <span>t.o.s</span>
+                </button>
+                <button onclick="switchTab('gallery')" id="tab-btn-gallery" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-transparent text-neutral-400 hover:text-neutral-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-image text-[11px]"></i>
+                    <span>gallery</span>
+                </button>
+                <button onclick="switchTab('price')" id="tab-btn-price" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-transparent text-neutral-400 hover:text-neutral-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-tags text-[11px]"></i>
+                    <span>price</span>
+                </button>
+                <button onclick="switchTab('contact')" id="tab-btn-contact" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-transparent text-neutral-400 hover:text-neutral-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-envelope text-[11px]"></i>
+                    <span>contact</span>
+                </button>
+                <button onclick="switchTab('guide')" id="tab-btn-guide" class="tab-btn px-4 py-2 text-xs font-bold rounded-t-2xl border-t-2 border-x-2 border-transparent text-neutral-400 hover:text-neutral-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-globe text-[11px]"></i>
+                    <span>xuất link web</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="bg-neutral-100 rounded-2xl border-2 border-neutral-700 p-5 sm:p-7 text-neutral-800 min-h-[500px] flex flex-col justify-between shadow-inner">
+            
+            <!-- Address Bar -->
+            <div class="flex items-center gap-2.5 pb-4 mb-5 border-b border-neutral-300">
+                <div class="flex items-center gap-1.5 text-neutral-400">
+                    <div class="w-3 h-3 rounded-full bg-neutral-300"></div>
+                    <div class="w-3 h-3 rounded-full bg-neutral-300"></div>
+                    <div class="w-3 h-3 rounded-full bg-neutral-300"></div>
+                </div>
+                <div class="flex-1 bg-white border border-neutral-300 rounded-full px-4 py-1.5 flex items-center gap-2.5 text-xs font-mono text-neutral-600 shadow-sm">
+                    <i class="fa-solid fa-lock text-[11px] text-neutral-400"></i>
+                    <span id="browser-url-text" class="truncate font-semibold">artist-portfolio.netlify.app</span>
+                </div>
+            </div>
+
+            <!-- TAB 1: HOME -->
+            <div id="panel-home" class="tab-panel active space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left Avatar Section -->
+                    <div class="md:col-span-5 flex flex-col items-center">
+                        <div class="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl border-2 border-neutral-800 overflow-hidden bg-neutral-200 group shadow-lg cursor-pointer">
+                            <img id="img-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" alt="Avatar" class="w-full h-full object-cover grayscale contrast-125 transition duration-300 group-hover:scale-105" onclick="openLightbox(this.src)" onerror="this.src='https://placehold.co/500x500/222/fff?text=Avatar'">
+                        </div>
+                        <span class="font-mono text-xs text-neutral-500 mt-2.5 font-semibold">@username • info & tos</span>
+                    </div>
+
+                    <!-- Right Bio Section -->
+                    <div class="md:col-span-7 space-y-4">
+                        <div class="border border-neutral-300 rounded-2xl p-4 sm:p-5 bg-white shadow-sm relative space-y-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <h2 class="font-bold text-base text-neutral-900 uppercase tracking-tight">about me</h2>
+                                <span class="w-2.5 h-2.5 rounded-full bg-neutral-800" title="Status"></span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-neutral-700 leading-relaxed font-medium">
+                                Xin chào! Trang web này tổng hợp thông tin cá nhân, bảng giá tham khảo và điều khoản dịch vụ (TOS) khi trao đổi vẽ tranh. Vui lòng đọc kỹ thông tin trước khi liên hệ.
+                            </p>
+                        </div>
+
+                        <!-- Status Card -->
+                        <div class="border border-neutral-300 rounded-2xl p-3.5 bg-neutral-50 flex items-center justify-between text-xs font-semibold">
+                            <span class="text-neutral-700">Trạng thái thông tin:</span>
+                            <span class="bg-neutral-900 text-white px-3 py-1 rounded-lg text-xs font-bold">CẬP NHẬT 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split Cards: Can Do / Cannot Do -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div class="border border-neutral-300 rounded-2xl p-4 bg-white space-y-2 shadow-sm">
+                        <span class="font-bold text-xs uppercase text-neutral-900 block border-b border-neutral-200 pb-1.5">
+                            <i class="fa-solid fa-circle-check text-neutral-800 mr-1.5"></i> Nhận thông tin (Can Do)
+                        </span>
+                        <ul class="text-xs text-neutral-700 space-y-1.5 pl-1 font-medium">
+                            <li>• Original Character (OC) / Fanart</li>
+                            <li>• Chibi / Anime / Manga Style</li>
+                            <li>• Phong cảnh / Chi tiết đơn giản</li>
+                        </ul>
+                    </div>
+
+                    <div class="border border-neutral-300 rounded-2xl p-4 bg-white space-y-2 shadow-sm">
+                        <span class="font-bold text-xs uppercase text-neutral-900 block border-b border-neutral-200 pb-1.5">
+                            <i class="fa-solid fa-circle-xmark text-neutral-800 mr-1.5"></i> Không nhận (Cannot Do)
+                        </span>
+                        <ul class="text-xs text-neutral-700 space-y-1.5 pl-1 font-medium">
+                            <li>• NSFW / R18 / Heavy Gore</li>
+                            <li>• Mecha quá phức tạp</li>
+                            <li>• Sao chép nét vẽ nghệ sĩ khác</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: TERMS OF SERVICE -->
+            <div id="panel-tos" class="tab-panel space-y-4">
+                <div class="border border-neutral-300 rounded-2xl p-5 bg-white space-y-4 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-neutral-200 pb-3">
+                        <h3 class="font-bold text-sm uppercase tracking-wider text-neutral-900 bg-neutral-200 px-2.5 py-1 rounded-lg">terms of service (tos)</h3>
+                        <span class="font-mono text-xs text-neutral-500">v2.0 • 2026</span>
+                    </div>
+
+                    <div class="text-xs sm:text-sm text-neutral-700 space-y-4 leading-relaxed max-h-[380px] overflow-y-auto pr-2 font-medium">
+                        <p class="italic bg-neutral-50 p-3 rounded-xl border border-neutral-200 text-neutral-600">Vui lòng đọc kỹ các điều khoản dưới đây trước khi liên hệ. Việc gửi yêu cầu trao đổi đồng nghĩa với việc bạn đã đồng ý với toàn bộ các điều khoản này.</p>
+                        
+                        <div class="space-y-1">
+                            <strong class="block font-bold text-neutral-900 text-xs sm:text-sm uppercase">1. QUY TRÌNH LÀM VIỆC (WORKFLOW)</strong>
+                            <p>• <strong>Gửi thông tin:</strong> Khách hàng gửi tin nhắn mô tả chi tiết yêu cầu kèm ảnh tham khảo (references).</p>
+                            <p>• <strong>Xác nhận & Báo giá:</strong> Thống nhất yêu cầu và chi phí.</p>
+                            <p>• <strong>Thanh toán:</strong> Hoàn tất thanh toán theo thỏa thuận.</p>
+                            <p>• <strong>Sketches / Phác thảo:</strong> Gửi bản phác thảo (chỉnh sửa nét tối đa 2-3 lần miễn phí).</p>
+                            <p>• <strong>Bàn giao:</strong> Gửi file chất lượng cao qua Google Drive / Email.</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <strong class="block font-bold text-neutral-900 text-xs sm:text-sm uppercase">2. THANH TOÁN (PAYMENT)</strong>
+                            <p>• Phương thức: Momo / Banking / Paypal / Ko-fi.</p>
+                            <p>• Thanh toán 100% trước khi tiến hành vẽ (hoặc 50% cọc tùy thỏa thuận).</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <strong class="block font-bold text-neutral-900 text-xs sm:text-sm uppercase">3. QUYỀN SỬ DỤNG (RIGHTS & USAGE)</strong>
+                            <p>• Tranh mặc định dùng cho mục đích cá nhân (Avatar, Wallpaper, In ấn cá nhân).</p>
+                            <p>• Vui lòng ghi credit tác giả khi đăng tải mạng xã hội.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: GALLERY -->
+            <div id="panel-gallery" class="tab-panel space-y-4">
+                <div class="flex justify-between items-center border-b border-neutral-300 pb-2.5">
+                    <h3 class="font-bold text-sm uppercase text-neutral-900">art gallery (nhấp ảnh để xem full)</h3>
+                    <span class="font-mono text-xs text-neutral-500">gallery mẫu</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5" id="gallery-grid">
+                    <div class="relative group aspect-[4/3] rounded-2xl overflow-hidden border-2 border-neutral-300 bg-neutral-200 shadow-sm cursor-pointer">
+                        <img id="gallery-img-1" src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1200&q=80" alt="Artwork 1" class="w-full h-full object-cover grayscale contrast-125 transition duration-300 group-hover:scale-105" onclick="openLightbox(this.src)">
+                    </div>
+
+                    <div class="relative group aspect-[4/3] rounded-2xl overflow-hidden border-2 border-neutral-300 bg-neutral-200 shadow-sm cursor-pointer">
+                        <img id="gallery-img-2" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80" alt="Artwork 2" class="w-full h-full object-cover grayscale contrast-125 transition duration-300 group-hover:scale-105" onclick="openLightbox(this.src)">
+                    </div>
+
+                    <div class="relative group aspect-[4/3] rounded-2xl overflow-hidden border-2 border-neutral-300 bg-neutral-200 shadow-sm cursor-pointer">
+                        <img id="gallery-img-3" src="https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1200&q=80" alt="Artwork 3" class="w-full h-full object-cover grayscale contrast-125 transition duration-300 group-hover:scale-105" onclick="openLightbox(this.src)">
+                    </div>
+
+                    <div class="relative group aspect-[4/3] rounded-2xl overflow-hidden border-2 border-neutral-300 bg-neutral-200 shadow-sm cursor-pointer">
+                        <img id="gallery-img-4" src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80" alt="Artwork 4" class="w-full h-full object-cover grayscale contrast-125 transition duration-300 group-hover:scale-105" onclick="openLightbox(this.src)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PRICE -->
+            <div id="panel-price" class="tab-panel space-y-4">
+                <div class="flex justify-between items-center border-b border-neutral-300 pb-2.5">
+                    <h3 class="font-bold text-sm uppercase text-neutral-900">pricing list & samples</h3>
+                    <span class="font-mono text-xs text-neutral-500">nhấp ảnh để xem lớn</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="border border-neutral-300 rounded-2xl p-4 bg-white flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                        <div class="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-neutral-300 shrink-0 bg-neutral-100 cursor-pointer">
+                            <img id="price-sample-1" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover grayscale hover:scale-105 transition" onclick="openLightbox(this.src)">
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1.5 w-full">
+                            <div class="flex flex-wrap justify-between items-baseline gap-1">
+                                <h4 class="font-bold text-sm text-neutral-900 uppercase">HEADSHOT / AVATAR</h4>
+                                <span class="font-mono text-xs sm:text-sm font-bold text-neutral-900">150.000 VNĐ</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-neutral-600 font-medium">Vẽ từ vai trở lên, background đơn sắc hoặc trong suốt HD. Nét vẽ tỉ mỉ, chi tiết rõ ràng.</p>
+                        </div>
+                    </div>
+
+                    <div class="border border-neutral-300 rounded-2xl p-4 bg-white flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                        <div class="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-neutral-300 shrink-0 bg-neutral-100 cursor-pointer">
+                            <img id="price-sample-2" src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover grayscale hover:scale-105 transition" onclick="openLightbox(this.src)">
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1.5 w-full">
+                            <div class="flex flex-wrap justify-between items-baseline gap-1">
+                                <h4 class="font-bold text-sm text-neutral-900 uppercase">HALF BODY</h4>
+                                <span class="font-mono text-xs sm:text-sm font-bold text-neutral-900">300.000 VNĐ</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-neutral-600 font-medium">Vẽ tới đùi hoặc eo, bao gồm chi tiết trang phục và phụ kiện hoàn chỉnh.</p>
+                        </div>
+                    </div>
+
+                    <div class="border border-neutral-300 rounded-2xl p-4 bg-white flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                        <div class="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-neutral-300 shrink-0 bg-neutral-100 cursor-pointer">
+                            <img id="price-sample-3" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover grayscale hover:scale-105 transition" onclick="openLightbox(this.src)">
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1.5 w-full">
+                            <div class="flex flex-wrap justify-between items-baseline gap-1">
+                                <h4 class="font-bold text-sm text-neutral-900 uppercase">FULL BODY</h4>
+                                <span class="font-mono text-xs sm:text-sm font-bold text-neutral-900">500.000 VNĐ</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-neutral-600 font-medium">Toàn thân nhân vật, full color + shading hoàn chỉnh nét cẩn thận.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: CONTACT -->
+            <div id="panel-contact" class="tab-panel space-y-4">
+                <div class="border border-neutral-300 rounded-2xl p-5 bg-white space-y-4 shadow-sm">
+                    <h3 class="font-bold text-sm uppercase text-neutral-900 border-b border-neutral-200 pb-2.5">contact info</h3>
+                    <p class="text-xs sm:text-sm text-neutral-600 font-medium">Trang này cung cấp thông tin liên hệ trực tiếp. Vui lòng liên hệ qua các kênh dưới đây để trao đổi chi tiết:</p>
+
+                    <div class="space-y-3 pt-1">
+                        <a href="https://facebook.com" target="_blank" class="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-300 hover:border-neutral-900 bg-neutral-50 hover:bg-white transition group">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center text-base">
+                                    <i class="fa-brands fa-facebook-f"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-xs sm:text-sm block text-neutral-900">Facebook Page / Cá nhân</span>
+                                    <span class="text-xs text-neutral-500 font-medium">facebook.com/your-profile</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs text-neutral-400 group-hover:text-neutral-900"></i>
+                        </a>
+
+                        <a href="mailto:your.email@gmail.com" class="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-300 hover:border-neutral-900 bg-neutral-50 hover:bg-white transition group">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center text-base">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-xs sm:text-sm block text-neutral-900">Gmail / Email</span>
+                                    <span class="text-xs text-neutral-500 font-medium">your.email@gmail.com</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs text-neutral-400 group-hover:text-neutral-900"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: LINK EXPORT GUIDE -->
+            <div id="panel-guide" class="tab-panel space-y-4">
+                <div class="border border-neutral-300 rounded-2xl p-5 bg-white space-y-4 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-neutral-200 pb-3">
+                        <h3 class="font-bold text-sm uppercase text-neutral-900 bg-neutral-200 px-2.5 py-1 rounded-lg">CÁCH XUẤT LINK WEBSITE MIỄN PHÍ</h3>
+                        <span class="font-mono text-xs text-neutral-500">Free Hosting Guide</span>
+                    </div>
+
+                    <div class="text-xs sm:text-sm text-neutral-700 space-y-4 font-medium leading-relaxed">
+                        <p class="bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                            Để chia sẻ file HTML này thành một đường link web thực sự cho người khác xem (VD: <code>https://ten-ban.netlify.app</code>), bạn có thể dùng 2 cách cực kỳ đơn giản & 100% miễn phí dưới đây:
+                        </p>
+
+                        <!-- Method 1: Netlify Drop -->
+                        <div class="border border-neutral-200 rounded-xl p-4 space-y-2 bg-neutral-50">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-neutral-900 text-white font-bold px-2 py-0.5 rounded text-xs">Cách 1</span>
+                                <h4 class="font-bold text-neutral-900 uppercase">Dùng Netlify Drop (Nhanh nhất - 30 Giây)</h4>
+                            </div>
+                            <ol class="list-decimal pl-5 space-y-1 text-neutral-700">
+                                <li>Lưu mã nguồn file này thành file có tên <code>index.html</code> trên máy tính.</li>
+                                <li>Truy cập trang: <a href="https://app.netlify.com/drop" target="_blank" class="text-neutral-900 font-bold underline">app.netlify.com/drop</a></li>
+                                <li>Kéo thả file <code>index.html</code> vừa lưu vào ô giữa màn hình.</li>
+                                <li>Netlify sẽ tự động tạo một đường link trang web public ngay lập tức để bạn chia sẻ cho mọi người!</li>
+                            </ol>
+                        </div>
+
+                        <!-- Method 2: Github Pages -->
+                        <div class="border border-neutral-200 rounded-xl p-4 space-y-2 bg-neutral-50">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-neutral-900 text-white font-bold px-2 py-0.5 rounded text-xs">Cách 2</span>
+                                <h4 class="font-bold text-neutral-900 uppercase">Dùng GitHub Pages (Lâu dài & Tùy chỉnh tên miền)</h4>
+                            </div>
+                            <ol class="list-decimal pl-5 space-y-1 text-neutral-700">
+                                <li>Tạo tài khoản tại <a href="https://github.com" target="_blank" class="text-neutral-900 font-bold underline">github.com</a>.</li>
+                                <li>Tạo một Repository mới (chọn chế độ Public).</li>
+                                <li>Upload file <code>index.html</code> lên Repository.</li>
+                                <li>Vào phần <strong>Settings ➔ Pages</strong>, tại mục <em>Branch</em> chọn <code>main</code> hoặc <code>master</code> và nhấn <strong>Save</strong>.</li>
+                                <li>Link web của bạn sẽ có dạng: <code>https://ten-user.github.io/ten-repo/</code></li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pt-5 border-t border-neutral-300 flex justify-between items-center text-xs font-medium text-neutral-500">
+                <span>© 2026 information & portfolio</span>
+                <span class="font-mono">monochrome theme</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            const panels = document.querySelectorAll('.tab-panel');
+            panels.forEach(p => p.classList.remove('active'));
+
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.classList.remove('bg-neutral-100', 'text-neutral-900', 'border-neutral-700');
+                btn.classList.add('border-transparent', 'text-neutral-400');
+            });
+
+            const activePanel = document.getElementById(`panel-${tabId}`);
+            if (activePanel) activePanel.classList.add('active');
+
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-neutral-400');
+                activeBtn.classList.add('bg-neutral-100', 'text-neutral-900', 'border-neutral-700');
+            }
+        }
+
+        // Lightbox Functions for Full-Screen Image Inspection
+        function openLightbox(imgSrc) {
+            const lightbox = document.getElementById('image-lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = imgSrc;
+            currentZoom = 1;
+            lightboxImg.style.transform = `scale(${currentZoom})`;
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('image-lightbox');
+            lightbox.classList.remove('flex');
+            lightbox.classList.add('hidden');
+        }
+
+        function toggleZoom(imgElem) {
+            currentZoom = currentZoom === 1 ? 1.75 : 1;
+            imgElem.style.transform = `scale(${currentZoom})`;
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            document.getElementById('lightbox-img').style.transform = `scale(1)`;
+        }
+    </script>
+</body>
+</html>
